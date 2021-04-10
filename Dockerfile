@@ -1,11 +1,11 @@
 FROM python:3.9
 
-COPY /requirements.txt /bot/requirements.txt
+COPY /requirements.txt /requirements.txt
 
-WORKDIR /bot/bot/
+WORKDIR /
 
-RUN pip install -r /bot/requirements.txt
+RUN pip install -r /requirements.txt
 
-COPY . /bot/bot/
+COPY . /
 
 CMD ["python3", "bot.py"]
