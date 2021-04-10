@@ -1,0 +1,2 @@
+bot_token = '814421679:AAGdFFeBIP6Cs-VUNbskuLTY3z9imSXQ6h0'
+owm_token = 'e0a3aa1277572215e68425c76dc67592'
