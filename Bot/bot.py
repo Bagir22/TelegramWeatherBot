@@ -3,7 +3,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-
+from aiogram.utils.executor import start_webhook
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import re
@@ -13,10 +13,14 @@ import keyboards
 import owm
 
 bot = Bot(token=config.bot_token)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+#storage = MemoryStorage()
+dp = Dispatcher(bot)
 
 scheduler = AsyncIOScheduler()
+
+
+async def on_startup(dp):
+    await bot.set_webhook(config.WEBHOOK_URL, drop_pending_updates=True)
 
 
 class BotStartState(StatesGroup):
@@ -42,6 +46,7 @@ async def start_command(message: types.Message, state: FSMContext):
     await message.answer('Hello, I am the Bot that can send you weather' +
                          '\nLet' + 's move on to configuring' +
                          '\nTo do this, send me your geolocation')
+
 
 @dp.message_handler(content_types="location", state=BotStartState.cityState)
 async def process_location_set(message: types.Message, state: FSMContext):
@@ -87,7 +92,7 @@ async def process_timer_set(message: types.message, state: FSMContext):
                 await state.finish()
             else:
                 await message.answer("Hmmm, the format of the entered data is wrong!" +
-                                      "\nTry again!")
+                                     "\nTry again!")
         else:
             if re.match(r'[0-2][0-3]', result[0]) and re.match(r'[0-5]\d', result[1]):
                 time1 = result[0]
@@ -98,10 +103,10 @@ async def process_timer_set(message: types.message, state: FSMContext):
                 await state.finish()
             else:
                 await message.answer("Hmmm, the format of the entered data is wrong!" +
-                                      "\nTry again!")
+                                     "\nTry again!")
     else:
         await message.answer("Hmmm, the format of the entered data is wrong!" +
-                                      "\nTry again!")
+                             "\nTry again!")
 
 
 @dp.callback_query_handler(text='weather_currently_button')
@@ -208,5 +213,13 @@ async def set_main_keyboard_back_button(call: types.CallbackQuery):
 
 
 if __name__ == '__main__':
+    start_webhook(
+        dispatcher=dp,
+        webhook_path=config.WEBHOOK_PATH,
+        skip_updates=True,
+        on_startup=on_startup,
+        host=config.WEBAPP_HOST,
+        port=config.WEBAPP_PORT
+    )
     scheduler.start()
-    executor.start_polling(dp, skip_updates=True)
+    # executor.start_polling(dp, skip_updates=True)
