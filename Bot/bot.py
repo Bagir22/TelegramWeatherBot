@@ -163,7 +163,7 @@ async def send_week_weather(call: types.CallbackQuery):
                 'Friday',
                 'Saturday']
     for i in range(0, 6):
-        t = f"\nВ {weekdays[i]} {week[i]['day_detailed']} \nTemperature - {('%.0f' % round(week[i]['day_temp']['day'] - 273))}"
+        t = f"\nAt {weekdays[i]} {week[i]['day_detailed']} \nTemperature - {('%.0f' % round(week[i]['day_temp']['day'] - 273))} degrees Celsius"
         week_text += t
     await call.message.answer(week_text, reply_markup=keyboards.weather_keyboard())
 
