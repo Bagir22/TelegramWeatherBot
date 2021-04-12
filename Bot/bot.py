@@ -178,6 +178,7 @@ def schedule_jobs(time1, time2, chat_id):
                       args=(dp, chat_id))
 
 
+'''
 @dp.callback_query_handler(text='set_location_button')
 async def process_change_location(call: types.CallbackQuery, state:FSMContext):
     await BotChangeLocationState.ChangeLocation.set()
@@ -191,7 +192,7 @@ async def process_get_change_location(message: types.Message, state:FSMContext):
     longitude = message.location.longitude
     await message.answer("Ok, new geolocation received", reply_markup=keyboards.settings_keyboard())
     await state.finish()
-
+'''
 
 @dp.callback_query_handler(text='set_timer_button')
 async def process_change_timer(call: types.CallbackQuery):
