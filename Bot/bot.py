@@ -18,15 +18,19 @@ dp = Dispatcher(bot)
 
 scheduler = AsyncIOScheduler()
 
-
-async def on_startup(dp):
-    await bot.set_webhook(config.WEBHOOK_URL, drop_pending_updates=True)
-
-
 class BotStartState(StatesGroup):
     cityState = State()
     timerState = State()
     setTimer = State()
+
+
+class BotChangeLocationState(StatesGroup):
+    ChangeLocation = State()
+
+
+
+async def on_startup(dp):
+    await bot.set_webhook(config.WEBHOOK_URL, drop_pending_updates=True)
 
 
 @dp.message_handler(state='*', commands='cancel')
@@ -175,16 +179,18 @@ def schedule_jobs(time1, time2, chat_id):
 
 
 @dp.callback_query_handler(text='set_location_button')
-async def process_change_location(call: types.CallbackQuery):
+async def process_change_location(call: types.CallbackQuery, state:FSMContext):
+    await BotChangeLocationState.ChangeLocation.set()
     await call.message.answer("Please share your geolocation to update your location")
 
 
-@dp.message_handler(content_types="location")
-async def process_get_change_location(message: types.Message):
+@dp.message_handler(content_types="location", state=BotChangeLocationState.ChangeLocation)
+async def process_get_change_location(message: types.Message, state:FSMContext):
     global latitude, longitude
     latitude = message.location.latitude
     longitude = message.location.longitude
     await message.answer("Ok, new geolocation received", reply_markup=keyboards.settings_keyboard())
+    await state.finish()
 
 
 @dp.callback_query_handler(text='set_timer_button')
