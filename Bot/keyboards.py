@@ -18,8 +18,8 @@ def weather_keyboard():
     btn_weather_week = types.InlineKeyboardButton(text="Weather week ", callback_data="weather_week_button")
     back_button = types.InlineKeyboardButton(text="Back", callback_data="back_button")
     wth_key.row(btn_weather_now)
-    wth_key.row(btn_weather_tomorrow)
     wth_key.row(btn_weather_today)
+    wth_key.row(btn_weather_tomorrow)
     wth_key.row(btn_weather_week)
     wth_key.row(back_button)
     return wth_key

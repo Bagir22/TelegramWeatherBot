@@ -4,6 +4,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils.executor import start_webhook
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import re
@@ -13,21 +14,16 @@ import keyboards
 import owm
 
 bot = Bot(token=config.bot_token)
-#storage = MemoryStorage()
-dp = Dispatcher(bot)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 scheduler = AsyncIOScheduler()
+
 
 class BotStartState(StatesGroup):
     cityState = State()
     timerState = State()
     setTimer = State()
-
-
-class BotChangeLocationState(StatesGroup):
-    ChangeLocation = State()
-
-
 
 async def on_startup(dp):
     await bot.set_webhook(config.WEBHOOK_URL, drop_pending_updates=True)
@@ -50,7 +46,6 @@ async def start_command(message: types.Message, state: FSMContext):
     await message.answer('Hello, I am the Bot that can send you weather' +
                          '\nLet' + 's move on to configuring' +
                          '\nTo do this, send me your geolocation')
-
 
 @dp.message_handler(content_types="location", state=BotStartState.cityState)
 async def process_location_set(message: types.Message, state: FSMContext):
@@ -96,7 +91,7 @@ async def process_timer_set(message: types.message, state: FSMContext):
                 await state.finish()
             else:
                 await message.answer("Hmmm, the format of the entered data is wrong!" +
-                                     "\nTry again!")
+                                      "\nTry again!")
         else:
             if re.match(r'[0-2][0-3]', result[0]) and re.match(r'[0-5]\d', result[1]):
                 time1 = result[0]
@@ -107,10 +102,10 @@ async def process_timer_set(message: types.message, state: FSMContext):
                 await state.finish()
             else:
                 await message.answer("Hmmm, the format of the entered data is wrong!" +
-                                     "\nTry again!")
+                                      "\nTry again!")
     else:
         await message.answer("Hmmm, the format of the entered data is wrong!" +
-                             "\nTry again!")
+                                      "\nTry again!")
 
 
 @dp.callback_query_handler(text='weather_currently_button')
@@ -178,21 +173,18 @@ def schedule_jobs(time1, time2, chat_id):
                       args=(dp, chat_id))
 
 
-'''
 @dp.callback_query_handler(text='set_location_button')
-async def process_change_location(call: types.CallbackQuery, state:FSMContext):
-    await BotChangeLocationState.ChangeLocation.set()
+async def process_change_location(call: types.CallbackQuery):
     await call.message.answer("Please share your geolocation to update your location")
 
 
-@dp.message_handler(content_types="location", state=BotChangeLocationState.ChangeLocation)
-async def process_get_change_location(message: types.Message, state:FSMContext):
+@dp.message_handler(content_types="location")
+async def process_get_change_location(message: types.Message):
     global latitude, longitude
     latitude = message.location.latitude
     longitude = message.location.longitude
     await message.answer("Ok, new geolocation received", reply_markup=keyboards.settings_keyboard())
-    await state.finish()
-'''
+
 
 @dp.callback_query_handler(text='set_timer_button')
 async def process_change_timer(call: types.CallbackQuery):
@@ -229,4 +221,5 @@ if __name__ == '__main__':
         port=config.WEBAPP_PORT
     )
     scheduler.start()
-    # executor.start_polling(dp, skip_updates=True)
+
+    #executor.start_polling(dp, skip_updates=True)
