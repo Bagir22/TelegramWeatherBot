@@ -28,6 +28,14 @@ class BotStartState(StatesGroup):
     timerState = State()
     setTimer = State()
 
+class BotChangeLocationState(StatesGroup):
+    callback_message = State()
+    geo_message = State()
+
+class BotChangeTimerState(StatesGroup):
+    callback_message = State()
+    OnOff_message = State()
+    time_message = State()
 
 @dp.message_handler(state='*', commands='cancel')
 @dp.message_handler(Text(equals='cancel', ignore_case=True), state='*')
@@ -175,16 +183,19 @@ def schedule_jobs(time1, time2, chat_id):
 
 
 @dp.callback_query_handler(text='set_location_button')
-async def process_change_location(call: types.CallbackQuery):
+async def process_change_location(call: types.CallbackQuery, state= FSMContext):
+    await BotChangeLocationState.callback_message.set()
     await call.message.answer("Please share your geolocation to update your location")
 
 
-@dp.message_handler(content_types="location")
-async def process_get_change_location(message: types.Message):
+#Переписать гео Вызов через callback data timer
+@dp.message_handler(content_types="location", state=BotChangeLocationState.callback_message)
+async def process_get_change_location(message: types.Message, state= FSMContext):
     global latitude, longitude
     latitude = message.location.latitude
     longitude = message.location.longitude
     await message.answer("Ok, new geolocation received", reply_markup=keyboards.settings_keyboard())
+    await state.finish()
 
 
 @dp.callback_query_handler(text='set_timer_button')
