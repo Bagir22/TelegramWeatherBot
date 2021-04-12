@@ -179,7 +179,7 @@ async def process_change_location(call: types.CallbackQuery):
     await call.message.answer("Please share your geolocation to update your location")
 
 
-@dp.message_handler(content_types="location", text='set_location_button')
+@dp.message_handler(content_types="location")
 async def process_get_change_location(message: types.Message):
     global latitude, longitude
     latitude = message.location.latitude
