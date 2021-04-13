@@ -168,8 +168,8 @@ async def send_week_weather(call: types.CallbackQuery):
     await call.message.answer(week_text, reply_markup=keyboards.weather_keyboard())
 
 
-def schedule_jobs(time1, time2, chat_id):
-    scheduler.add_job(send_automatically_today_weather, 'cron', day_of_week='mon-sun', hour=time1, minute=time2,
+async def schedule_jobs(time1, time2, chat_id):
+    await scheduler.add_job(send_automatically_today_weather, 'cron', day_of_week='mon-sun', hour=time1, minute=time2,
                       args=(dp, chat_id))
 
 
@@ -188,7 +188,15 @@ async def process_get_change_location(message: types.Message):
 
 @dp.callback_query_handler(text='set_timer_button')
 async def process_change_timer(call: types.CallbackQuery):
-    await call.message.answer("Please turn on or off the timer", reply_markup=keyboards.timer_keyboard())
+    await call.message.answer("Please turn on or off the timer"
+                              "\n(It doesn't work)", reply_markup=keyboards.timer_keyboard())
+
+
+'''
+@dp.message_handler()
+async def process_get_change_timer(message: types.message):
+    await message.answer("Please turn on or off the timer", reply_markup=keyboards.timer_keyboard())
+'''
 
 
 @dp.callback_query_handler(text='weather_button')
@@ -221,5 +229,3 @@ if __name__ == '__main__':
         port=config.WEBAPP_PORT
     )
     scheduler.start()
-
-    #executor.start_polling(dp, skip_updates=True)
