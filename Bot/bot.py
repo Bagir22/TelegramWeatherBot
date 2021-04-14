@@ -187,9 +187,10 @@ async def process_get_change_location(message: types.Message):
 
 
 @dp.callback_query_handler(text='set_timer_button')
-async def process_change_timer(call: types.CallbackQuery):
+async def process_change_timer(call: types.CallbackQuery, state:FSMContext):
+    await BotStartState.timerState.set()
     await call.message.answer("Please turn on or off the timer"
-                              "\n(It doesn't work)", reply_markup=keyboards.timer_keyboard())
+                              , reply_markup=keyboards.timer_keyboard())
 
 
 '''
