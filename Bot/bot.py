@@ -1,4 +1,4 @@
-from aiogram import Bot, Dispatcher, types, executor
+from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -10,12 +10,15 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import re
 
 import config
+
 import keyboards
 import owm
+import mongodb
 
 bot = Bot(token=config.bot_token)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+
 
 scheduler = AsyncIOScheduler()
 
@@ -24,6 +27,7 @@ class BotStartState(StatesGroup):
     cityState = State()
     timerState = State()
     setTimer = State()
+
 
 async def on_startup(dp):
     await bot.set_webhook(config.WEBHOOK_URL, drop_pending_updates=True)
@@ -43,16 +47,19 @@ async def cancel_handler(message: types.Message, state: FSMContext):
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message, state: FSMContext):
     await BotStartState.cityState.set()
+    mongodb.insert_data_into_db(id=message.chat.id)
     await message.answer('Hello, I am the Bot that can send you weather' +
                          '\nLet' + 's move on to configuring' +
                          '\nTo do this, send me your geolocation')
+
 
 @dp.message_handler(content_types="location", state=BotStartState.cityState)
 async def process_location_set(message: types.Message, state: FSMContext):
     global latitude, longitude
     latitude = message.location.latitude
     longitude = message.location.longitude
-
+    id = message.chat.id
+    mongodb.update_location(id, latitude, longitude)
     await message.answer("Ok, now turn the timer on or off", reply_markup=keyboards.timer_keyboard())
     await BotStartState.next()
 
@@ -60,7 +67,10 @@ async def process_location_set(message: types.Message, state: FSMContext):
 @dp.callback_query_handler(text='onTimer', state=BotStartState.timerState)
 async def process_timerOnState_set(call: types.CallbackQuery, state: FSMContext):
     text = "The timer is on, now send me the timer time in the format xx:xx"
+    id = call.message.chat.id
+    timerState: True
 
+    mongodb.update_timerState(id, timerState)
     await call.message.answer(text)
     await BotStartState.next()
 
@@ -68,6 +78,10 @@ async def process_timerOnState_set(call: types.CallbackQuery, state: FSMContext)
 @dp.callback_query_handler(text='offTimer', state=BotStartState.timerState)
 async def process_timerOffState_set(call: types.CallbackQuery, state: FSMContext):
     text = "The timer is off \nGood, the bot is running"
+    id = call.message.chat.id
+    timerState: False
+
+    mongodb.update_timerState(id, timerState)
 
     await call.message.answer(text, reply_markup=keyboards.main_keyboard())
     await BotStartState.next()
@@ -76,6 +90,7 @@ async def process_timerOffState_set(call: types.CallbackQuery, state: FSMContext
 
 @dp.message_handler(state=BotStartState.setTimer)
 async def process_timer_set(message: types.message, state: FSMContext):
+    id = message.chat.id
     timer_message = message.text
     if re.match(r'\w\w\:\w\w', timer_message):
         result = re.split(r':', timer_message)
@@ -87,7 +102,7 @@ async def process_timer_set(message: types.message, state: FSMContext):
                 schedule_jobs(time1, time2, chat_id)
 
                 await message.answer("Good, the bot is running", reply_markup=keyboards.main_keyboard())
-
+                mongodb.update_time(id, timer_message)
                 await state.finish()
             else:
                 await message.answer("Hmmm, the format of the entered data is wrong!" +
@@ -98,6 +113,7 @@ async def process_timer_set(message: types.message, state: FSMContext):
                 time2 = result[1]
                 chat_id = message.chat.id
                 schedule_jobs(time1, time2, chat_id)
+                mongodb.update_time(id, timer_message)
                 await message.answer("Good, the bot is running", reply_markup=keyboards.main_keyboard())
                 await state.finish()
             else:
@@ -183,6 +199,10 @@ async def process_get_change_location(message: types.Message):
     global latitude, longitude
     latitude = message.location.latitude
     longitude = message.location.longitude
+
+    id = message.chat.id
+    mongodb.update_location(id, latitude, longitude)
+
     await message.answer("Ok, new geolocation received", reply_markup=keyboards.settings_keyboard())
 
 
