@@ -1,4 +1,4 @@
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -14,6 +14,7 @@ import config
 import keyboards
 import owm
 import mongodb
+
 
 bot = Bot(token=config.bot_token)
 storage = MemoryStorage()
@@ -55,7 +56,7 @@ async def start_command(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types="location", state=BotStartState.cityState)
 async def process_location_set(message: types.Message, state: FSMContext):
-    global latitude, longitude
+    #global latitude, longitude
     latitude = message.location.latitude
     longitude = message.location.longitude
     id = message.chat.id
@@ -68,7 +69,7 @@ async def process_location_set(message: types.Message, state: FSMContext):
 async def process_timerOnState_set(call: types.CallbackQuery, state: FSMContext):
     text = "The timer is on, now send me the timer time in the format xx:xx"
     id = call.message.chat.id
-    timerState: True
+    timerState = True
 
     mongodb.update_timerState(id, timerState)
     await call.message.answer(text)
@@ -79,7 +80,7 @@ async def process_timerOnState_set(call: types.CallbackQuery, state: FSMContext)
 async def process_timerOffState_set(call: types.CallbackQuery, state: FSMContext):
     text = "The timer is off \nGood, the bot is running"
     id = call.message.chat.id
-    timerState: False
+    timerState = False
 
     mongodb.update_timerState(id, timerState)
 
@@ -92,14 +93,14 @@ async def process_timerOffState_set(call: types.CallbackQuery, state: FSMContext
 async def process_timer_set(message: types.message, state: FSMContext):
     id = message.chat.id
     timer_message = message.text
-    if re.match(r'\w\w\:\w\w', timer_message):
+    if re.match(r'\w\w:\w\w', timer_message):
         result = re.split(r':', timer_message)
         if 13 < int(result[0]) < 20:
             if re.match(r'[1][4-9]', result[0]) and re.match(r'[0-5]\d', result[1]):
                 time1 = result[0]
                 time2 = result[1]
                 chat_id = message.chat.id
-                schedule_jobs(time1, time2, chat_id)
+                await schedule_jobs(time1, time2, chat_id)
 
                 await message.answer("Good, the bot is running", reply_markup=keyboards.main_keyboard())
                 mongodb.update_time(id, timer_message)
@@ -112,7 +113,7 @@ async def process_timer_set(message: types.message, state: FSMContext):
                 time1 = result[0]
                 time2 = result[1]
                 chat_id = message.chat.id
-                schedule_jobs(time1, time2, chat_id)
+                await schedule_jobs(time1, time2, chat_id)
                 mongodb.update_time(id, timer_message)
                 await message.answer("Good, the bot is running", reply_markup=keyboards.main_keyboard())
                 await state.finish()
@@ -126,6 +127,7 @@ async def process_timer_set(message: types.message, state: FSMContext):
 
 @dp.callback_query_handler(text='weather_currently_button')
 async def send_currently_weather(call: types.CallbackQuery):
+    latitude, longitude = mongodb.get_location_from_db(call.message.chat.id)
     current_detailed, current_humidity, current_pressure, current_temp = owm.currently_weather(latitude, longitude)
     await call.message.answer(f"Now - {current_detailed}" +
                               f"\nHumidity - {current_humidity} %" +
@@ -137,6 +139,7 @@ async def send_currently_weather(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text='weather_today_button')
 async def send_today_weather(call: types.CallbackQuery):
+    latitude, longitude = mongodb.get_location_from_db(call.message.chat.id)
     today_detailed, today_humidity, today_pressure, today_temp = owm.today_weather(latitude, longitude)
     await call.message.answer(f"Now - {today_detailed}" +
                               f"\nHumidity - {today_humidity} %" +
@@ -147,6 +150,7 @@ async def send_today_weather(call: types.CallbackQuery):
 
 
 async def send_automatically_today_weather(message: types.Message, chat_id):
+    latitude, longitude = mongodb.get_location_from_db(chat_id)
     today_detailed, today_humidity, today_pressure, today_temp = owm.today_weather(latitude, longitude)
     await bot.send_message(chat_id=chat_id, text=(f"Now - {today_detailed}" +
                                                   f"\nHumidity - {today_humidity} %" +
@@ -158,6 +162,7 @@ async def send_automatically_today_weather(message: types.Message, chat_id):
 
 @dp.callback_query_handler(text='weather_tomorrow_button')
 async def send_tomorrow_weather(call: types.CallbackQuery):
+    latitude, longitude = mongodb.get_location_from_db(call.message.chat.id)
     tomorrow_detailed, tomorrow_humidity, tomorrow_pressure, tomorrow_temp = owm.tomorrow_weather(latitude, longitude)
     await call.message.answer(f"Tomorrow - {tomorrow_detailed}"
                               f"\nHumidity - {tomorrow_humidity} %"
@@ -169,6 +174,7 @@ async def send_tomorrow_weather(call: types.CallbackQuery):
 
 @dp.callback_query_handler(text='weather_week_button')
 async def send_week_weather(call: types.CallbackQuery):
+    latitude, longitude = mongodb.get_location_from_db(call.message.chat.id)
     week = owm.week_weather(latitude, longitude)
     week_text = ""
     weekdays = ['Sunday',
@@ -185,7 +191,7 @@ async def send_week_weather(call: types.CallbackQuery):
 
 
 async def schedule_jobs(time1, time2, chat_id):
-    await scheduler.add_job(send_automatically_today_weather, 'cron', day_of_week='mon-sun', hour=time1, minute=time2,
+    scheduler.add_job(send_automatically_today_weather, 'cron', day_of_week='mon-sun', hour=time1, minute=time2,
                       args=(dp, chat_id))
 
 
@@ -196,7 +202,7 @@ async def process_change_location(call: types.CallbackQuery):
 
 @dp.message_handler(content_types="location")
 async def process_get_change_location(message: types.Message):
-    global latitude, longitude
+    #global latitude, longitude
     latitude = message.location.latitude
     longitude = message.location.longitude
 
@@ -240,6 +246,7 @@ async def set_main_keyboard_back_button(call: types.CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=keyboards.main_keyboard())
 
 
+
 if __name__ == '__main__':
     start_webhook(
         dispatcher=dp,
@@ -249,4 +256,6 @@ if __name__ == '__main__':
         host=config.WEBAPP_HOST,
         port=config.WEBAPP_PORT
     )
+
     scheduler.start()
+    #executor.start_polling(dp, skip_updates=True)
