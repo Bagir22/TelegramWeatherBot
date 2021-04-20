@@ -1,4 +1,4 @@
 build:
   docker:
     web: Dockerfile
-    clock: python bot.py
+    #clock: python bot.py
