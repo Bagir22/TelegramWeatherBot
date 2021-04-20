@@ -230,7 +230,7 @@ async def process_get_change_timer(message: types.message):
 async def set_weather_keyboard(call: types.CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=keyboards.weather_keyboard())
 
-
+@dp.message_handler(commands=['settings'])
 @dp.callback_query_handler(text='settings_button')
 async def set_settings_keyboard(call: types.CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=keyboards.settings_keyboard())
