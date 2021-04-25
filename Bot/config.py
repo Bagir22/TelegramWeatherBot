@@ -2,7 +2,8 @@ import os
 
 bot_token = '814421679:AAGn-xW9ARssv0-7j-pyagCMn5tmrYEk50Y'
 owm_token = 'e0a3aa1277572215e68425c76dc67592'
-mongodb_password = 'vCVaDVvEqRf6zZs'
+
+MONGODB_URI = 'mongodb+srv://WeatherBot:vCVaDVvEqRf6zZs@cluster0.xicxe.mongodb.net/WeatherBotDB?retryWrites=true&w=majority'
 
 HEROKU_APP_NAME = 'bagirtelegramweatherbot'
 

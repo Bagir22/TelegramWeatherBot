@@ -1,9 +1,8 @@
 from pymongo import MongoClient
-from config import mongodb_password
+from config import MONGODB_URI
 
 
-cluster = MongoClient(
-    f"mongodb+srv://WeatherBot:{mongodb_password}@cluster0.xicxe.mongodb.net/WeatherBotDB?retryWrites=true&w=majority")
+cluster = MongoClient(MONGODB_URI)
 
 db = cluster["WeatherBotDB"]
 collection = db["WeatherBotCollection"]
