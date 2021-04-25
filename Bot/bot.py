@@ -220,6 +220,7 @@ async def process_change_timer(call: types.CallbackQuery, state:FSMContext):
 
 
 '''
+1
 @dp.message_handler()
 async def process_get_change_timer(message: types.message):
     await message.answer("Please turn on or off the timer", reply_markup=keyboards.timer_keyboard())
