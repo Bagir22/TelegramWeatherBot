@@ -129,7 +129,7 @@ async def process_timer_set(message: types.message, state: FSMContext):
 async def send_currently_weather(call: types.CallbackQuery):
     latitude, longitude = mongodb.get_location_from_db(call.message.chat.id)
     current_detailed, current_humidity, current_pressure, current_temp = owm.currently_weather(latitude, longitude)
-    await call.message.answer(f"Now - {current_detailed}" +
+    await call.message.answer(f"Now is {current_detailed}" +
                               f"\nHumidity - {current_humidity} %" +
                               f"\nPressure - {str(current_pressure)} mmHg" +
                               f"\nTemperature now - {str('%.0f' % round(current_temp['temp'] - 273))}" +
@@ -141,7 +141,7 @@ async def send_currently_weather(call: types.CallbackQuery):
 async def send_today_weather(call: types.CallbackQuery):
     latitude, longitude = mongodb.get_location_from_db(call.message.chat.id)
     today_detailed, today_humidity, today_pressure, today_temp = owm.today_weather(latitude, longitude)
-    await call.message.answer(f"Now - {today_detailed}" +
+    await call.message.answer(f"Today is {today_detailed}" +
                               f"\nHumidity - {today_humidity} %" +
                               f"\nPressure - {str(today_pressure)} mmHg" +
                               f"\nTemperature - {str('%.0f' % round(today_temp['day'] - 273))}" +
@@ -152,7 +152,7 @@ async def send_today_weather(call: types.CallbackQuery):
 async def send_automatically_today_weather(message: types.Message, chat_id):
     latitude, longitude = mongodb.get_location_from_db(chat_id)
     today_detailed, today_humidity, today_pressure, today_temp = owm.today_weather(latitude, longitude)
-    await bot.send_message(chat_id=chat_id, text=(f"Now - {today_detailed}" +
+    await bot.send_message(chat_id=chat_id, text=(f"Now is {today_detailed}" +
                                                   f"\nHumidity - {today_humidity} %" +
                                                   f"\nPressure - {str(today_pressure)} mmHg" +
                                                   f"\nTemperature - {str('%.0f' % round(today_temp['day'] - 273))}" +
@@ -164,7 +164,7 @@ async def send_automatically_today_weather(message: types.Message, chat_id):
 async def send_tomorrow_weather(call: types.CallbackQuery):
     latitude, longitude = mongodb.get_location_from_db(call.message.chat.id)
     tomorrow_detailed, tomorrow_humidity, tomorrow_pressure, tomorrow_temp = owm.tomorrow_weather(latitude, longitude)
-    await call.message.answer(f"Tomorrow - {tomorrow_detailed}"
+    await call.message.answer(f"Tomorrow is {tomorrow_detailed}"
                               f"\nHumidity - {tomorrow_humidity} %"
                               f"\nPressure - {str(tomorrow_pressure)} mmHg"
                               f"\nTemperature - {str('%.0f' % round(tomorrow_temp['day'] - 273))}"
@@ -249,6 +249,7 @@ async def set_main_keyboard_back_button(call: types.CallbackQuery):
 
 
 if __name__ == '__main__':
+    scheduler.start()
     start_webhook(
         dispatcher=dp,
         webhook_path=config.WEBHOOK_PATH,
@@ -258,4 +259,3 @@ if __name__ == '__main__':
         port=config.WEBAPP_PORT
     )
 
-    scheduler.start()
