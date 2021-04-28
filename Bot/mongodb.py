@@ -24,7 +24,7 @@ def update_timerState(id, timerState):
 
 def update_time(id, hours, minutes):
     collection.update_one(
-        {"_id": id}, {"$set": {"hours": hours, "minutes":minutes}})
+        {"_id": id}, {"$set": {"hours": hours, "minutes": minutes}})
 
 
 def get_location_from_db(id):
@@ -44,4 +44,4 @@ def get_time_from_db(id):
     hours = collection.find_one({"_id": id})["hours"]
     minutes = collection.find_one({"_id": id})["minutes"]
 
-    return minutes
+    return hours, minutes
