@@ -8,8 +8,8 @@ db = cluster["WeatherBotDB"]
 collection = db["WeatherBotCollection"]
 
 
-def insert_data_into_db(id, latitude=None, longitude=None, timerState=None, time=None):
-    collection.update({"_id": id}, {"$set": {"latitude": latitude, "longitude": longitude, "timerState": timerState, "time": time}}, upsert=True)
+def insert_data_into_db(id, latitude=None, longitude=None, timerState=None, hours=None, minutes=None):
+    collection.update({"_id": id}, {"$set": {"latitude": latitude, "longitude": longitude, "timerState": timerState, "hours": hours, "minutes":minutes}}, upsert=True)
 
 
 def update_location(id, latitude, longitude):
@@ -22,9 +22,9 @@ def update_timerState(id, timerState):
         {"_id": id}, {"$set": {"timerState": timerState}})
 
 
-def update_time(id, time):
+def update_time(id, hours, minutes):
     collection.update_one(
-        {"_id": id}, {"$set": {"time": time}})
+        {"_id": id}, {"$set": {"hours": hours, "minutes":minutes}})
 
 
 def get_location_from_db(id):
@@ -41,6 +41,7 @@ def get_timerState_from_db(id):
 
 
 def get_time_from_db(id):
-    time = collection.find_one({"_id": id})["time"]
+    hours = collection.find_one({"_id": id})["hours"]
+    minutes = collection.find_one({"_id": id})["minutes"]
 
-    return time
+    return minutes

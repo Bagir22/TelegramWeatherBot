@@ -93,36 +93,18 @@ async def process_timerOffState_set(call: types.CallbackQuery, state: FSMContext
 async def process_timer_set(message: types.message, state: FSMContext):
     id = message.chat.id
     timer_message = message.text
-    if re.match(r'\w\w:\w\w', timer_message):
+    if re.match(r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$', timer_message):
         result = re.split(r':', timer_message)
-        if 13 < int(result[0]) < 20:
-            if re.match(r'[1][4-9]', result[0]) and re.match(r'[0-5]\d', result[1]):
-                time1 = result[0]
-                time2 = result[1]
-                chat_id = message.chat.id
-                await schedule_jobs(time1, time2, chat_id)
-
-                await message.answer("Good, the bot is running", reply_markup=keyboards.main_keyboard())
-                mongodb.update_time(id, timer_message)
-                await state.finish()
-            else:
-                await message.answer("Hmmm, the format of the entered data is wrong!" +
-                                      "\nTry again!")
-        else:
-            if re.match(r'[0-2][0-3]', result[0]) and re.match(r'[0-5]\d', result[1]):
-                time1 = result[0]
-                time2 = result[1]
-                chat_id = message.chat.id
-                await schedule_jobs(time1, time2, chat_id)
-                mongodb.update_time(id, timer_message)
-                await message.answer("Good, the bot is running", reply_markup=keyboards.main_keyboard())
-                await state.finish()
-            else:
-                await message.answer("Hmmm, the format of the entered data is wrong!" +
-                                      "\nTry again!")
+        hours = result[0]
+        minutes = result[1]
+        mongodb.update_time(id, hours, minutes)
+        await schedule_jobs(hours, minutes, id)
+        await message.answer("Good, the bot is running", reply_markup=keyboards.main_keyboard())
+        #mongodb.update_time(id, timer_message)
+        await state.finish()
     else:
         await message.answer("Hmmm, the format of the entered data is wrong!" +
-                                      "\nTry again!")
+                             "\nTry again!")
 
 
 @dp.callback_query_handler(text='weather_currently_button')
@@ -190,9 +172,9 @@ async def send_week_weather(call: types.CallbackQuery):
     await call.message.answer(week_text, reply_markup=keyboards.weather_keyboard())
 
 
-async def schedule_jobs(time1, time2, chat_id):
-    scheduler.add_job(send_automatically_today_weather, 'cron', day_of_week='mon-sun', hour=time1, minute=time2,
-                      args=(dp, chat_id))
+async def schedule_jobs(hours, minutes, id):
+    scheduler.add_job(send_automatically_today_weather, 'cron', day_of_week='mon-sun', hour=hours, minute=minutes,
+                      args=(dp, id))
 
 
 @dp.callback_query_handler(text='set_location_button')
@@ -217,6 +199,7 @@ async def process_change_timer(call: types.CallbackQuery, state:FSMContext):
     await BotStartState.timerState.set()
     await call.message.answer("Please turn on or off the timer"
                               , reply_markup=keyboards.timer_keyboard())
+
 
 
 '''
@@ -250,6 +233,7 @@ async def set_main_keyboard_back_button(call: types.CallbackQuery):
 
 if __name__ == '__main__':
     scheduler.start()
+    #executor.start_polling(dp, skip_updates=True)
     start_webhook(
         dispatcher=dp,
         webhook_path=config.WEBHOOK_PATH,
