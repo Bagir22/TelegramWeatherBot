@@ -219,7 +219,7 @@ async def set_main_keyboard_back_button(call: types.CallbackQuery):
 
 
 if __name__ == '__main__':
-    #scheduler.start()
+    #scheduler.start()1
     #executor.start_polling(dp, skip_updates=True)
     start_webhook(
         dispatcher=dp,
