@@ -8,4 +8,4 @@ RUN pip install -r /app/requirements.txt
 
 COPY . /app
 
-CMD ["python3", "/app/Bot/bot.py"; "python3", "/app/Bot/bot.py";]
+CMD ["python3", "/app/Bot/bot.py"]
