@@ -5,12 +5,12 @@ from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.utils.executor import start_webhook
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 
 import re
 
 import config
-
+import scheduler
 import keyboards
 import owm
 import mongodb
@@ -20,8 +20,6 @@ bot = Bot(token=config.bot_token)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
-
-scheduler = AsyncIOScheduler()
 
 
 class BotStartState(StatesGroup):
@@ -98,7 +96,7 @@ async def process_timer_set(message: types.message, state: FSMContext):
         hours = result[0]
         minutes = result[1]
         mongodb.update_time(id, hours, minutes)
-        await schedule_jobs(hours, minutes, id)
+        await scheduler.schedule_jobs(hours, minutes, id)
         await message.answer("Good, the bot is running", reply_markup=keyboards.main_keyboard())
         #mongodb.update_time(id, timer_message)
         await state.finish()
@@ -131,16 +129,6 @@ async def send_today_weather(call: types.CallbackQuery):
                               reply_markup=keyboards.weather_keyboard())
 
 
-async def send_automatically_today_weather(message: types.Message, chat_id):
-    latitude, longitude = mongodb.get_location_from_db(chat_id)
-    today_detailed, today_humidity, today_pressure, today_temp = owm.today_weather(latitude, longitude)
-    await bot.send_message(chat_id=chat_id, text=(f"Now is {today_detailed}" +
-                                                  f"\nHumidity - {today_humidity} %" +
-                                                  f"\nPressure - {str(today_pressure)} mmHg" +
-                                                  f"\nTemperature - {str('%.0f' % round(today_temp['day'] - 273))}" +
-                                                  f"\nFeels like - {str('%.0f' % round(today_temp['feels_like_day'] - 273))}"),
-                           reply_markup=keyboards.weather_keyboard())
-
 
 @dp.callback_query_handler(text='weather_tomorrow_button')
 async def send_tomorrow_weather(call: types.CallbackQuery):
@@ -172,9 +160,15 @@ async def send_week_weather(call: types.CallbackQuery):
     await call.message.answer(week_text, reply_markup=keyboards.weather_keyboard())
 
 
-async def schedule_jobs(hours, minutes, id):
-    scheduler.add_job(send_automatically_today_weather, 'cron', day_of_week='mon-sun', hour=hours, minute=minutes,
-                      args=(dp, id))
+async def send_automatically_today_weather(message: types.Message, chat_id):
+    latitude, longitude = mongodb.get_location_from_db(chat_id)
+    today_detailed, today_humidity, today_pressure, today_temp = owm.today_weather(latitude, longitude)
+    await bot.send_message(chat_id=chat_id, text=(f"Now is {today_detailed}" +
+                                                  f"\nHumidity - {today_humidity} %" +
+                                                  f"\nPressure - {str(today_pressure)} mmHg" +
+                                                  f"\nTemperature - {str('%.0f' % round(today_temp['day'] - 273))}" +
+                                                  f"\nFeels like - {str('%.0f' % round(today_temp['feels_like_day'] - 273))}"),
+                           reply_markup=keyboards.weather_keyboard())
 
 
 @dp.callback_query_handler(text='set_location_button')
@@ -202,17 +196,10 @@ async def process_change_timer(call: types.CallbackQuery, state:FSMContext):
 
 
 
-'''
-1
-@dp.message_handler()
-async def process_get_change_timer(message: types.message):
-    await message.answer("Please turn on or off the timer", reply_markup=keyboards.timer_keyboard())
-'''
-
-
 @dp.callback_query_handler(text='weather_button')
 async def set_weather_keyboard(call: types.CallbackQuery):
     await call.message.edit_reply_markup(reply_markup=keyboards.weather_keyboard())
+
 
 @dp.message_handler(commands=['settings'])
 @dp.callback_query_handler(text='settings_button')
@@ -232,7 +219,7 @@ async def set_main_keyboard_back_button(call: types.CallbackQuery):
 
 
 if __name__ == '__main__':
-    scheduler.start()
+    #scheduler.start()
     #executor.start_polling(dp, skip_updates=True)
     start_webhook(
         dispatcher=dp,
